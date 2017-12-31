@@ -19,6 +19,9 @@ makes a wallet.json file in ~/.cwstat/ to keep track of your wallet.
 ![alt text](https://github.com/KINOBOT/cwstat/blob/master/cwstat_add.png)
 
 
+# requirements
+requests - pip install requests
+
 # install
 Clone it and then make the file executable ( chmod +X ) then run it in the terminal
 
