@@ -1,0 +1,271 @@
+#!/usr/bin/python
+
+import requests
+import json
+import curses
+import os, sys
+
+
+#GLOBAL VARIABLES
+KEY_ESCAPE = 27
+KEY_ZERO = 48
+KEY_A = 65
+KEY_L = 76
+KEY_Q = 81
+KEY_R = 82
+KEY_S = 83
+KEY_C = 67
+KEY_a = 97
+KEY_l = 108
+KEY_q = 113
+KEY_r = 114
+KEY_s = 115
+KEY_c = 99
+KEY_LEFT = 260
+KEY_RIGHT = 261
+KEY_ENTER = 10
+
+COINDATA = {}
+
+FIELD_LENGTH = 20
+USAGE = '[A] Add/Modify Coin [R] Remove Coin [L] List all Coins [Q] Quit'
+
+BASEDIR = os.path.join(os.path.expanduser('~'), '.cwstat')
+WALLETFILE = os.path.join(BASEDIR, 'wallet.json')
+
+'''
+WALLET = {  "EOS": "552", 
+            "MIOTA": "131.96", 
+            "BTC": "0.00090504", 
+            "ETH": "1.6395", 
+            "LTC": "10.905", 
+            "XLM": "11300.98187312", 
+            "XRP": "2966.09839785", 
+            "XVG": "7557.435", 
+            "XRB": "414.03", 
+            "BCH": "0.0925", 
+            "TRX": "10640", 
+            "DRGN": "523.7625132" }
+''' 
+
+class Coin:
+    def __init__(self):
+        self.data = ''
+
+    def __init__(self, jsondata ):
+        self.data = jsondata
+
+    def Symbol(self):
+        return self.data['symbol']
+    
+    def Name(self):
+        return self.data['name']
+
+    def Usd(self):
+        return self.data['price_usd']
+    
+    def Change1h(self):
+        return self.data['percent_change_1h']  
+
+    def Change24h(self):
+        return self.data['percent_change_24h']   
+    
+
+def UpdateCoindata():
+    url = 'https://api.coinmarketcap.com/v1/ticker/'
+
+    try:
+        r = requests.get(url)
+    except requests.exceptions.RequestException:
+        sys.exit('Could not get live ticker')
+
+    try:
+        jdata = r.json()
+        COINDATA.clear()
+        for entry in jdata:
+            c = Coin( entry )
+            COINDATA[c.Symbol()] = c
+            
+
+    except:
+        sys.exit('Could not parse data')
+
+def WriteWallet():
+    with open(WALLETFILE, 'w') as f:
+        json.dump(WALLET, f)
+
+def ReadWallet():
+    try:
+        with open(WALLETFILE, 'r') as f:
+            return json.load(f)
+    except:
+        return {}
+
+
+def ReadStringFromCmd(stdscr, prompt):
+    curses.echo()
+    stdscr.clear()
+    stdscr.addnstr(0, 0, prompt, -1, curses.color_pair(2))
+    curses.curs_set(1)
+    stdscr.refresh()
+    inputStr = stdscr.getstr(1, 0, 20).decode()
+    curses.noecho()
+    curses.curs_set(0)
+    stdscr.clear()
+    curses.halfdelay(10)
+    return inputStr
+
+
+
+
+def Draw(stdscr, doList, y, x ):
+    spacer_for_4 = ' ' * (FIELD_LENGTH - 4)
+    spacer_for_5 = ' ' * (FIELD_LENGTH - 5)
+    spacer_for_7 = ' ' * (FIELD_LENGTH - 7)
+    spacer_for_9 = ' ' * (FIELD_LENGTH - 9)
+    spacer_for_10 = ' ' * (FIELD_LENGTH - 10)
+
+    
+    if doList:
+        stdscr.clear()
+        stdscr.addnstr( 0, 0, "AVAILABLE COINS", x, curses.color_pair(4) )
+        stdscr.addnstr( y - 1, 0, "[L] to go back", x, curses.color_pair(2) )
+
+        allCoins = list(COINDATA.keys())
+        allCoins.sort()
+        numCoins = len(allCoins)
+
+        for i in range(numCoins):
+            candidate = allCoins[i] + ' - ' + COINDATA[allCoins[i]].Name()
+
+            xx = i % ( y - 3 );
+            yy = (i - xx) / ( y - 3 );
+
+            stdscr.addnstr( xx + 2 ,yy * 30, candidate, x, curses.color_pair(3) )
+
+    else:
+        stdscr.clear()
+        header = 'COIN%sPRICE%sHOLDING%sWORTH%sCHANGE 1H%sCHANGE 24H%s' % ( spacer_for_4,
+                                                                            spacer_for_5,
+                                                                            spacer_for_7,
+                                                                            spacer_for_5,
+                                                                            spacer_for_9,
+                                                                            spacer_for_10) 
+        
+        if y >= 1:
+            stdscr.addnstr( 0,0, header, x, curses.color_pair(4) )
+        
+
+        allCoins = list(WALLET.keys())
+        numCoins = len(allCoins)
+
+        total = 0
+        for i in range(numCoins):
+            coinSymbol = allCoins[i]
+            coinUsdValue = COINDATA[allCoins[i]].Usd()
+            holding  = float(WALLET[coinSymbol])
+            holdingStr = WALLET[coinSymbol]
+            worth = holding * float(coinUsdValue)
+            worthStr = str(worth)
+            change1h = COINDATA[allCoins[i]].Change1h()
+            change24h = COINDATA[allCoins[i]].Change24h()
+
+
+            total += worth
+
+            spacer1 = ' ' * ( FIELD_LENGTH - len(coinSymbol) )
+            spacer2 = ' ' * ( FIELD_LENGTH - len(coinUsdValue))
+            spacer3 = ' ' * ( FIELD_LENGTH - len(holdingStr))
+            spacer4 = ' ' * ( FIELD_LENGTH - len(worthStr))
+            spacer5 = ' ' * ( FIELD_LENGTH - len(change1h))
+            spacer6 = ' ' * ( FIELD_LENGTH - len(change24h))
+
+
+            candidate = '%s%s%s%s%s%s%s%s%s%s%s%s' % ( coinSymbol,spacer1,coinUsdValue,spacer2,holdingStr,spacer3, worthStr, spacer4, change1h, spacer5, change24h, spacer6 )
+            stdscr.addnstr( i + 2,0, candidate, x, curses.color_pair(3) )
+
+
+        balance = 'TOTAL BALANCE: $%s' % str(total)
+        stdscr.addnstr( y-2,0, balance, x, curses.color_pair(2) )
+        stdscr.addnstr( y-1,0, USAGE, x, curses.color_pair(2) )
+        #stdscr.addnstr( y-1,0, str(key), x, curses.color_pair(2) )             
+
+
+
+    
+def Mainc(stdscr):
+    
+    inputKey = 0
+    curses.curs_set(0)
+    curses.start_color()
+    curses.use_default_colors()
+    textColor = getattr(curses, 'COLOR_GREEN' )
+    highlightTextColor = getattr(curses, 'COLOR_WHITE' )
+    backgroundColor = getattr(curses, 'COLOR_BLACK' )
+
+
+    curses.init_pair(2, textColor, backgroundColor)
+    curses.init_pair(3, backgroundColor, textColor)
+    curses.init_pair(4, highlightTextColor, backgroundColor)
+
+    drawList = False
+
+    curses.halfdelay(10)
+
+    y, x = stdscr.getmaxyx()
+    stdscr.clear()
+
+    while inputKey not in {KEY_ESCAPE, KEY_Q, KEY_q}:
+        UpdateCoindata()
+        while True:
+            try:
+                Draw(stdscr, drawList, y, x)
+            except curses.error:
+                pass
+
+            inputKey = stdscr.getch()
+            if inputKey != curses.KEY_RESIZE:
+                break
+            stdscr.erase()
+            y, x = stdscr.getmaxyx()
+
+        if inputKey in {KEY_a, KEY_A}:
+            if y > 2:
+                inputData = ReadStringFromCmd(stdscr, 'Enter Symbol , and Amount ( BTC,2.45 )').strip().upper()
+                symbol, amount = inputData.split( ',' )
+
+                symbol = symbol.strip()
+                amount = amount.strip()
+
+                if symbol in COINDATA:
+                    WALLET[symbol.strip()] = amount.strip()
+                    WriteWallet()
+
+        if inputKey in {KEY_r, KEY_R}:
+            if y > 2:
+                inputData = ReadStringFromCmd(stdscr, 'What Symbol do you want to remove?').strip().upper()
+                if inputData in WALLET:
+                    WALLET.pop(inputData)
+                    WriteWallet()
+       
+        if inputKey in {KEY_l, KEY_L}:
+            drawList = not drawList
+
+
+                
+
+
+
+def Main():
+    try:
+        os.makedirs(BASEDIR)
+    except:
+        pass
+
+    global WALLET
+    WALLET = ReadWallet()
+    curses.wrapper(Mainc)
+
+
+if __name__ == '__main__':
+    Main()
