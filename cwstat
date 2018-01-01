@@ -25,14 +25,11 @@ KEY_LEFT = 260
 KEY_RIGHT = 261
 KEY_ENTER = 10
 
-NUM_MENUS = 4 
 COINDATA = {}
 
 FIELD_LENGTH = 20
-USAGE1 = '[A] Add/Modify Coin '
-USAGE2 = '[R] Remove Coin '
-USAGE3 = '[L] List all Coins '
-USAGE4 = '[Q] Quit '
+BUTTONS = [ '[A] Add/Modify Coin ', '[R] Remove Coin ', '[L] List all Coins ', '[Q] Quit ']
+NUM_MENUS = len(BUTTONS)
 USAGE = '[<>] to navigate [ENTER] to select'
 
 BASEDIR = os.path.join(os.path.expanduser('~'), '.cwstat')
@@ -200,25 +197,22 @@ def Draw(stdscr, doList, currentMenu, y, x ):
         stdscr.addnstr( y-3,0, balanceTag, x, curses.color_pair(2) )
         stdscr.addnstr( y-3,len(balanceTag), balance, x, curses.color_pair(3) )
 
-        beforeSel = ''
-        sel = ''
-        afterSel = ''
+        allButtons = ''.join( BUTTONS )
+        sel = BUTTONS[currentMenu]
 
-        if currentMenu == 0:
-            sel = USAGE1
-            afterSel = USAGE2 + USAGE3 + USAGE4
-        elif currentMenu == 1:
-            beforeSel = USAGE1
-            sel = USAGE2
-            afterSel = USAGE3 + USAGE4
-        elif currentMenu == 2:
-            beforeSel = USAGE1 + USAGE2
-            sel = USAGE3
-            afterSel = USAGE4
-        elif currentMenu == 3:
-            beforeSel = USAGE1 + USAGE2 + USAGE3
-            sel = USAGE4
-    
+        selStart = 0
+        
+        for i in range( currentMenu ):
+            selStart += len(BUTTONS[i])
+        
+        selEnd = selStart + len(sel)
+
+        beforeSel = ''
+        if currentMenu > 0:
+            beforeSel = allButtons[0:selStart]
+        
+        afterSel = allButtons[selEnd:-1]
+
         stdscr.addnstr( y-2,0, beforeSel, x, curses.color_pair(2) )
         stdscr.addnstr( y-2,len(beforeSel), sel, x, curses.color_pair(5) )
         stdscr.addnstr( y-2,len(beforeSel)+len(sel), afterSel, x, curses.color_pair(2) )
