@@ -33,6 +33,11 @@ USAGE = '[A] Add/Modify Coin [R] Remove Coin [L] List all Coins [Q] Quit'
 BASEDIR = os.path.join(os.path.expanduser('~'), '.cwstat')
 WALLETFILE = os.path.join(BASEDIR, 'wallet.json')
 
+
+ASCIIART1 = '   __ _______  ______  ___  ____ ______                      __       __       '
+ASCIIART2 = '  / //_/  _/ |/ / __ \/ _ )/ __ /_  __/ ____  _____    _____/ /____ _/ /_  ____'
+ASCIIART3 = ' / .< _/ //    / /_/ / _  / /_/ // /   /___/ / __| |/|/ (_-/ __/ _ `/ __/ /___/'
+ASCIIART4 = '/_/|_/___/_/|_/\____/____/\____//_/          \__/|__/__/___\__/\___/\__/       '
 '''
 WALLET = {  "EOS": "552", 
             "MIOTA": "131.96", 
@@ -128,6 +133,7 @@ def Draw(stdscr, doList, y, x ):
     
     if doList:
         stdscr.clear()
+        
         stdscr.addnstr( 0, 0, "AVAILABLE COINS", x, curses.color_pair(4) )
         stdscr.addnstr( y - 1, 0, "[L] to go back", x, curses.color_pair(2) )
 
@@ -142,9 +148,14 @@ def Draw(stdscr, doList, y, x ):
             yy = (i - xx) / ( y - 3 );
 
             stdscr.addnstr( xx + 2 ,yy * 30, candidate, x, curses.color_pair(3) )
-
     else:
         stdscr.clear()
+
+        stdscr.addnstr( 0,0, ASCIIART1, x, curses.color_pair(4))
+        stdscr.addnstr( 1,0, ASCIIART2, x, curses.color_pair(4))
+        stdscr.addnstr( 2,0, ASCIIART3, x, curses.color_pair(4))
+        stdscr.addnstr( 3,0, ASCIIART4, x, curses.color_pair(4))
+
         header = 'COIN%sPRICE%sHOLDING%sWORTH%sCHANGE 1H%sCHANGE 24H%s' % ( spacer_for_4,
                                                                             spacer_for_5,
                                                                             spacer_for_7,
@@ -152,8 +163,7 @@ def Draw(stdscr, doList, y, x ):
                                                                             spacer_for_9,
                                                                             spacer_for_10) 
         
-        if y >= 1:
-            stdscr.addnstr( 0,0, header, x, curses.color_pair(4) )
+        stdscr.addnstr( 5,0, header, x, curses.color_pair(4) )
         
 
         allCoins = list(WALLET.keys())
@@ -162,6 +172,10 @@ def Draw(stdscr, doList, y, x ):
         total = 0
         for i in range(numCoins):
             coinSymbol = allCoins[i]
+            coinSymbolLong = coinSymbol + (' ' * (5 - len(coinSymbol))) + ' - ' + COINDATA[allCoins[i]].Name()
+            if len(coinSymbolLong) > FIELD_LENGTH:
+                coinSymbolLong = coinSymbolLong[0:FIELD_LENGTH-1]
+                coinSymbolLong = coinSymbolLong[:-2] + '.'
             coinUsdValue = COINDATA[allCoins[i]].Usd()
             holding  = float(WALLET[coinSymbol])
             holdingStr = WALLET[coinSymbol]
@@ -173,7 +187,7 @@ def Draw(stdscr, doList, y, x ):
 
             total += worth
 
-            spacer1 = ' ' * ( FIELD_LENGTH - len(coinSymbol) )
+            spacer1 = ' ' * ( FIELD_LENGTH - len(coinSymbolLong) )
             spacer2 = ' ' * ( FIELD_LENGTH - len(coinUsdValue))
             spacer3 = ' ' * ( FIELD_LENGTH - len(holdingStr))
             spacer4 = ' ' * ( FIELD_LENGTH - len(worthStr))
@@ -181,12 +195,14 @@ def Draw(stdscr, doList, y, x ):
             spacer6 = ' ' * ( FIELD_LENGTH - len(change24h))
 
 
-            candidate = '%s%s%s%s%s%s%s%s%s%s%s%s' % ( coinSymbol,spacer1,coinUsdValue,spacer2,holdingStr,spacer3, worthStr, spacer4, change1h, spacer5, change24h, spacer6 )
-            stdscr.addnstr( i + 2,0, candidate, x, curses.color_pair(3) )
+            candidate = '%s%s%s%s%s%s%s%s%s%s%s%s' % ( coinSymbolLong,spacer1,coinUsdValue,spacer2,holdingStr,spacer3, worthStr, spacer4, change1h, spacer5, change24h, spacer6 )
+            stdscr.addnstr( i + 6,0, candidate, x, curses.color_pair(3) )
 
 
-        balance = 'TOTAL BALANCE: $%s' % str(total)
-        stdscr.addnstr( y-2,0, balance, x, curses.color_pair(2) )
+        balanceTag = 'TOTAL BALANCE: '
+        balance = '$%s' % str(total)
+        stdscr.addnstr( y-2,0, balanceTag, x, curses.color_pair(2) )
+        stdscr.addnstr( y-2,len(balanceTag), balance, x, curses.color_pair(3) )
         stdscr.addnstr( y-1,0, USAGE, x, curses.color_pair(2) )
         #stdscr.addnstr( y-1,0, str(key), x, curses.color_pair(2) )             
 
