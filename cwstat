@@ -142,12 +142,16 @@ def Draw(stdscr, doList, y, x ):
         numCoins = len(allCoins)
 
         for i in range(numCoins):
-            candidate = allCoins[i] + ' - ' + COINDATA[allCoins[i]].Name()
+            coinSymbol = allCoins[i]
+            coinSymbolLong = coinSymbol + (' ' * (5 - len(coinSymbol))) + ' - ' + COINDATA[allCoins[i]].Name()
+            if len(coinSymbolLong) > FIELD_LENGTH:
+                coinSymbolLong = coinSymbolLong[0:FIELD_LENGTH-1]
+                coinSymbolLong = coinSymbolLong[:-2] + '.'
 
             xx = i % ( y - 3 );
             yy = (i - xx) / ( y - 3 );
 
-            stdscr.addnstr( xx + 2 ,yy * 30, candidate, x, curses.color_pair(3) )
+            stdscr.addnstr( xx + 2 ,yy * FIELD_LENGTH, coinSymbolLong, x, curses.color_pair(3) )
     else:
         stdscr.clear()
 
