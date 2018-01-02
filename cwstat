@@ -28,8 +28,8 @@ KEY_ENTER = 10
 COINDATA = {}
 
 FIELD_LENGTH = 20
-BUTTONS = [ '[A] Add/Modify Coin ', '[R] Remove Coin ', '[L] List all Coins ', '[Q] Quit ']
-NUM_MENUS = len(BUTTONS)
+BUTTONS = [ '[A] Add/Modify Coin ', '[R] Remove Coin ', '[L] List all Coins ', '[S] Cycle Sorting ', '[Q] Quit ']
+
 USAGE = '[<>] to navigate [ENTER] to select'
 
 BASEDIR = os.path.join(os.path.expanduser('~'), '.cwstat')
@@ -79,8 +79,6 @@ def UpdateCoindata():
         for entry in jdata:
             c = Coin( entry )
             COINDATA[c.Symbol()] = c
-            
-
     except:
         sys.exit('Could not parse data')
 
@@ -109,18 +107,40 @@ def ReadStringFromCmd(stdscr, prompt):
     curses.halfdelay(10)
     return inputStr
 
+def DrawMenu(stdscr, y, x):
+    allButtons = ''.join( BUTTONS )
+    sel = BUTTONS[CURRENTMENU]
+
+    selStart = 0
+    
+    for i in range( CURRENTMENU ):
+        selStart += len(BUTTONS[i])
+    
+    selEnd = selStart + len(sel)
+
+    beforeSel = ''
+    if CURRENTMENU > 0:
+        beforeSel = allButtons[0:selStart]
+    
+    afterSel = allButtons[selEnd:-1]
+
+    stdscr.addnstr( y-2,0, beforeSel, x, curses.color_pair(2) )
+    stdscr.addnstr( y-2,len(beforeSel), sel, x, curses.color_pair(5) )
+    stdscr.addnstr( y-2,len(beforeSel)+len(sel), afterSel, x, curses.color_pair(2) )
+    stdscr.addnstr( y-1, 0, USAGE, x, curses.color_pair(2) )
 
 
-
-def Draw(stdscr, doList, currentMenu, y, x ):
+def Draw(stdscr, y, x ):
     spacer_for_4 = ' ' * (FIELD_LENGTH - 4)
     spacer_for_5 = ' ' * (FIELD_LENGTH - 5)
     spacer_for_7 = ' ' * (FIELD_LENGTH - 7)
     spacer_for_9 = ' ' * (FIELD_LENGTH - 9)
     spacer_for_10 = ' ' * (FIELD_LENGTH - 10)
 
-    
-    if doList:
+    global DRAWLIST
+    global SORTING
+
+    if DRAWLIST:
         stdscr.clear()
         
         stdscr.addnstr( 0, 0, "AVAILABLE COINS", x, curses.color_pair(4) )
@@ -156,12 +176,14 @@ def Draw(stdscr, doList, currentMenu, y, x ):
                                                                             spacer_for_9,
                                                                             spacer_for_10) 
         
-        stdscr.addnstr( 5,0, header, x, curses.color_pair(4) )
         
+        stdscr.addnstr( 5,0, header, x, curses.color_pair(4) )
+        stdscr.addnstr( 5,SORTING * FIELD_LENGTH + FIELD_LENGTH - 2, 'v', x, curses.color_pair(4) )
 
         allCoins = list(WALLET.keys())
         numCoins = len(allCoins)
 
+        listEntrys = []
         total = 0
         for i in range(numCoins):
             coinSymbol = allCoins[i]
@@ -169,6 +191,7 @@ def Draw(stdscr, doList, currentMenu, y, x ):
             if len(coinSymbolLong) > FIELD_LENGTH - 1:
                 coinSymbolLong = coinSymbolLong[0:FIELD_LENGTH-1]
                 coinSymbolLong = coinSymbolLong[:-2] + '.'
+
             coinUsdValue = COINDATA[allCoins[i]].Usd()
             holding  = float(WALLET[coinSymbol])
             holdingStr = WALLET[coinSymbol]
@@ -176,7 +199,6 @@ def Draw(stdscr, doList, currentMenu, y, x ):
             worthStr = str(worth)
             change1h = COINDATA[allCoins[i]].Change1h()
             change24h = COINDATA[allCoins[i]].Change24h()
-
 
             total += worth
 
@@ -187,9 +209,14 @@ def Draw(stdscr, doList, currentMenu, y, x ):
             spacer5 = ' ' * ( FIELD_LENGTH - len(change1h))
             spacer6 = ' ' * ( FIELD_LENGTH - len(change24h))
 
-
             candidate = '%s%s%s%s%s%s%s%s%s%s%s%s' % ( coinSymbolLong,spacer1,coinUsdValue,spacer2,holdingStr,spacer3, worthStr, spacer4, change1h, spacer5, change24h, spacer6 )
-            stdscr.addnstr( i + 6,0, candidate, x, curses.color_pair(3) )
+            
+            listEntrys.append( [candidate, coinSymbol, float(coinUsdValue), holding, worth, float(change1h), float(change24h)] )
+
+
+        listEntrys.sort(key=lambda r:r[1+SORTING])
+        for i in range(len(listEntrys)):
+            stdscr.addnstr( i + 6,0, listEntrys[i][0], x, curses.color_pair(3 - (i % 2)) )
 
 
         balanceTag = 'TOTAL BALANCE: '
@@ -197,27 +224,9 @@ def Draw(stdscr, doList, currentMenu, y, x ):
         stdscr.addnstr( y-3,0, balanceTag, x, curses.color_pair(2) )
         stdscr.addnstr( y-3,len(balanceTag), balance, x, curses.color_pair(3) )
 
-        allButtons = ''.join( BUTTONS )
-        sel = BUTTONS[currentMenu]
 
-        selStart = 0
-        
-        for i in range( currentMenu ):
-            selStart += len(BUTTONS[i])
-        
-        selEnd = selStart + len(sel)
-
-        beforeSel = ''
-        if currentMenu > 0:
-            beforeSel = allButtons[0:selStart]
-        
-        afterSel = allButtons[selEnd:-1]
-
-        stdscr.addnstr( y-2,0, beforeSel, x, curses.color_pair(2) )
-        stdscr.addnstr( y-2,len(beforeSel), sel, x, curses.color_pair(5) )
-        stdscr.addnstr( y-2,len(beforeSel)+len(sel), afterSel, x, curses.color_pair(2) )
-
-        stdscr.addnstr( y-1, 0, USAGE, x, curses.color_pair(2) )
+        # BUTTON management
+        DrawMenu(stdscr, y, x)
 
 
 
@@ -239,8 +248,24 @@ def RemoveCoin(stdscr):
         WALLET.pop(inputData)
         WriteWallet()
 
+def MenuActivate( stdscr ):
+    if CURRENTMENU == 0:
+        AddCoin(stdscr)
+    elif CURRENTMENU == 1:
+        RemoveCoin(stdscr)
+    elif CURRENTMENU == 2:
+        global DRAWLIST
+        DRAWLIST = not DRAWLIST
+    elif CURRENTMENU == 3:
+        global SORTING
+        SORTING += 1
+        if SORTING >= 6:
+            SORTING = 0;
+    elif CURRENTMENU == 4:
+        sys.exit(0)
+
 def Mainc(stdscr):
-    
+    global CURRENTMENU
     inputKey = 0
     curses.curs_set(0)
     curses.start_color()
@@ -255,8 +280,8 @@ def Mainc(stdscr):
     curses.init_pair(4, highlightTextColor, backgroundColor)
     curses.init_pair(5, backgroundColor, highlightTextColor)
 
-    drawList = False
-    currentMenu = 0
+    global DRAWLIST
+    DRAWLIST = False
 
     curses.halfdelay(10)
 
@@ -267,7 +292,7 @@ def Mainc(stdscr):
         UpdateCoindata()
         while True:
             try:
-                Draw(stdscr, drawList, currentMenu, y, x)
+                Draw(stdscr, y, x)
             except curses.error:
                 pass
 
@@ -284,34 +309,26 @@ def Mainc(stdscr):
             RemoveCoin(stdscr)
        
         if inputKey in {KEY_l, KEY_L}:
-            drawList = not drawList
+            DRAWLIST = not DRAWLIST
+
+        if inputKey in {KEY_s, KEY_S}:
+            global SORTING
+            SORTING += 1
+            if SORTING >= 6:
+                SORTING = 0;
 
         if inputKey in {KEY_RIGHT}:
-            currentMenu += 1
-            if currentMenu >= NUM_MENUS:
-                currentMenu = 0
+            CURRENTMENU += 1
+            if CURRENTMENU >= len(BUTTONS):
+                CURRENTMENU = 0
 
         if inputKey in {KEY_LEFT}:
-            currentMenu -= 1
-            if currentMenu < 0:
-                currentMenu = NUM_MENUS - 1
+            CURRENTMENU -= 1
+            if CURRENTMENU < 0:
+                CURRENTMENU = len(BUTTONS) - 1
 
         if inputKey in {KEY_ENTER}:
-            if currentMenu == 0:
-                AddCoin(stdscr)
-            elif currentMenu == 1:
-                RemoveCoin(stdscr)
-            elif currentMenu == 2:
-                drawList = not drawList
-            elif currentMenu == 3:
-                sys.exit(0)                
-            
-    
-
-
-                
-
-
+            MenuActivate(stdscr)
 
 def Main():
     try:
@@ -321,7 +338,11 @@ def Main():
 
     global WALLET
     WALLET = ReadWallet()
+    global CURRENTMENU
+    CURRENTMENU = 0
 
+    global SORTING
+    SORTING = 3
     curses.wrapper(Mainc)
 
 
