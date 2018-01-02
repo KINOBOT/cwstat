@@ -28,7 +28,7 @@ KEY_ENTER = 10
 COINDATA = {}
 
 FIELD_LENGTH = 20
-BUTTONS = [ '[A] Add/Modify Coin ', '[R] Remove Coin ', '[L] List all Coins ', '[S] Cycle Sorting ', '[Q] Quit ']
+BUTTONS = [ '[A] Add/Modify Coin ', '[R] Remove Coin ', '[L] List all Coins ', '[C] Cycle Sorting ', '[Q] Quit ']
 
 USAGE = '[<>] to navigate [ENTER] to select'
 
@@ -157,10 +157,14 @@ def Draw(stdscr, y, x ):
                 coinSymbolLong = coinSymbolLong[0:FIELD_LENGTH-1]
                 coinSymbolLong = coinSymbolLong[:-2] + '.'
 
+            coinSymbolLong += ' ' * ( FIELD_LENGTH - len(coinSymbolLong)) 
+
+            coinSymbolLong += COINDATA[allCoins[i]].Usd()[:9]
+
             xx = i % ( y - 3 );
             yy = (i - xx) / ( y - 3 );
 
-            stdscr.addnstr( xx + 2 ,yy * FIELD_LENGTH, coinSymbolLong, x, curses.color_pair(3) )
+            stdscr.addnstr( xx + 2 ,yy * (FIELD_LENGTH + 10), coinSymbolLong, x, curses.color_pair(3) )
     else:
         stdscr.clear()
 
@@ -221,8 +225,8 @@ def Draw(stdscr, y, x ):
 
         balanceTag = 'TOTAL BALANCE: '
         balance = '$%s' % str(total)
-        stdscr.addnstr( y-3,0, balanceTag, x, curses.color_pair(2) )
-        stdscr.addnstr( y-3,len(balanceTag), balance, x, curses.color_pair(3) )
+        stdscr.addnstr( y-4,0, balanceTag, x, curses.color_pair(2) )
+        stdscr.addnstr( y-4,len(balanceTag), balance, x, curses.color_pair(3) )
 
 
         # BUTTON management
@@ -311,7 +315,7 @@ def Mainc(stdscr):
         if inputKey in {KEY_l, KEY_L}:
             DRAWLIST = not DRAWLIST
 
-        if inputKey in {KEY_s, KEY_S}:
+        if inputKey in {KEY_c, KEY_C}:
             global SORTING
             SORTING += 1
             if SORTING >= 6:
