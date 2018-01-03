@@ -1,20 +1,21 @@
 # cwstat
 Crypto Wallet Status - Command line tool to manage your Crypto wallet
 
-![alt text](https://github.com/KINOBOT/cwstat/blob/master/cwstat_main.png)
+![alt text](https://github.com/KINOBOT/cwstat/blob/master/img/cwstat_main.png)
 
-![alt text](https://github.com/KINOBOT/cwstat/blob/master/cwstat_List.png)
+![alt text](https://github.com/KINOBOT/cwstat/blob/master/img/cwstat_List.png)
 
 makes a wallet.json file in ~/.cwstat/ to keep track of your wallet. 
 
-![alt text](https://github.com/KINOBOT/cwstat/blob/master/cwstat_add.png)
+![alt text](https://github.com/KINOBOT/cwstat/blob/master/img/cwstat_add.png)
 
 
 # requirements
 python 2.7+
+requests
 
-requests - pip install requests / easy_install requests
 
 # install
-Clone it and then make the file executable ( chmod +X ) then run it in the terminal
+Clone the repo, run ./requirements to install or check for all requirements. 
 
+Run ./cwstat to run. You can define CWSTAT_PATH to launch with an absolute path from any directory.
