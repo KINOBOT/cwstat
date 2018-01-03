@@ -190,6 +190,10 @@ def Draw(stdscr, y, x ):
         listEntrys = []
         total = 0
         for i in range(numCoins):
+            if not allCoins[i] in COINDATA:
+                #DoRemoveCoin(allCoins[i]) # do this if you dont want the somehow  removed coin to stay in the wallet
+                continue
+            
             coinSymbol = allCoins[i]
             coinSymbolLong = coinSymbol + (' ' * (5 - len(coinSymbol))) + ' - ' + COINDATA[allCoins[i]].Name()
             if len(coinSymbolLong) > FIELD_LENGTH - 1:
@@ -248,8 +252,11 @@ def AddCoin(stdscr):
 
 def RemoveCoin(stdscr):
     inputData = ReadStringFromCmd(stdscr, 'What Symbol do you want to remove?').strip().upper()
-    if inputData in WALLET:
-        WALLET.pop(inputData)
+    DoRemoveCoin(inputData)
+
+def DoRemoveCoin(c):
+    if c in WALLET:
+        WALLET.pop(c)
         WriteWallet()
 
 def MenuActivate( stdscr ):
