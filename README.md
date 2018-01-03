@@ -11,7 +11,8 @@ makes a wallet.json file in ~/.cwstat/ to keep track of your wallet.
 
 
 # requirements
-requests - pip install requests
+python 2.7+
+requests - pip install requests / easy_install requests
 
 # install
 Clone it and then make the file executable ( chmod +X ) then run it in the terminal
