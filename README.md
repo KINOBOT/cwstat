@@ -19,3 +19,10 @@ requests
 Clone the repo, run ./requirements to install or check for all requirements. 
 
 Run ./cwstat to run. You can define CWSTAT_PATH to launch with an absolute path from any directory.
+
+Alternatively add this to your ~/.bash_profile to alias the tool and set it up
+
+```bash
+export CWSTAT_PATH="/path/to/cwstat/root/dir"
+alias cws="${CWSTAT_PATH}/cwstat"
+```
