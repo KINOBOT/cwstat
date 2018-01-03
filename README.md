@@ -16,7 +16,11 @@ requests
 
 
 # install
-Clone the repo, run ./requirements to install or check for all requirements. 
+Clone the repo, run 
+```basdh
+sudo ./requirements 
+```
+to install or check for all requirements. 
 
 Run ./cwstat to run. You can define CWSTAT_PATH to launch with an absolute path from any directory.
 
