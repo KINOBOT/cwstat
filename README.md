@@ -12,6 +12,7 @@ makes a wallet.json file in ~/.cwstat/ to keep track of your wallet.
 
 # requirements
 python 2.7+
+
 requests - pip install requests / easy_install requests
 
 # install
