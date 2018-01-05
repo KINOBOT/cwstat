@@ -11,8 +11,14 @@ makes a wallet.json file in ~/.cwstat/ to keep track of your wallet.
 
 
 # requirements
+Linux / OSX
+
 python 2.7+
+
 requests
+
+even works on a phone with the righ os :)
+![alt text](https://github.com/KINOBOT/cwstat/blob/master/img/cwstat_phone.png)
 
 
 # install
