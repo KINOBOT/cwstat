@@ -2,6 +2,7 @@ import requests
 import json
 import curses
 import os, sys
+import threading
 
 
 #GLOBAL VARIABLES
@@ -64,7 +65,10 @@ class Coin:
     
 
 def UpdateCoindata():
-    url = 'https://api.coinmarketcap.com/v1/ticker/'
+    # invoke repeating
+    threading.Timer( 10.0, UpdateCoindata ).start()
+
+    url = 'https://api.coinmarketcap.com/v1/ticker/?limit=0'
 
     try:
         r = requests.get(url)
@@ -298,7 +302,6 @@ def Mainc(stdscr):
     stdscr.clear()
 
     while inputKey not in {KEY_ESCAPE, KEY_Q, KEY_q}:
-        UpdateCoindata()
         while True:
             try:
                 Draw(stdscr, y, x)
@@ -352,6 +355,10 @@ def Main():
 
     global SORTING
     SORTING = 3
+
+    # intiial update
+    UpdateCoindata()
+
     curses.wrapper(Mainc)
 
 
