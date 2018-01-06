@@ -65,9 +65,6 @@ class Coin:
     
 
 def UpdateCoindata():
-    # invoke repeating
-    threading.Timer( 10.0, UpdateCoindata ).start()
-
     url = 'https://api.coinmarketcap.com/v1/ticker/?limit=0'
 
     try:
@@ -83,6 +80,11 @@ def UpdateCoindata():
             COINDATA[c.Symbol()] = c
     except:
         sys.exit('Could not parse data')
+    
+    # invoke repeating
+    global THREADMAIN
+    THREADMAIN = threading.Timer( 10.0, UpdateCoindata )
+    THREADMAIN.cancel()
 
 def WriteWallet():
     with open(WALLETFILE, 'w') as f:
@@ -141,15 +143,21 @@ def Draw(stdscr, y, x ):
 
     global DRAWLIST
     global SORTING
+    global DRAWLISTID
 
     if DRAWLIST:
         stdscr.clear()
-        
-        stdscr.addnstr( 0, 0, "AVAILABLE COINS", x, curses.color_pair(4) )
+        global DRAWLISTID
+        global LISTITEMSPERSCREEN
+        global DRAWLISTMAX
+        stdscr.addnstr( 0, 0, 'AVAILABLE COINS ( page ' + str(DRAWLISTID+1) + ' of ' + str(DRAWLISTMAX) + ' )' , x, curses.color_pair(4) )
         stdscr.addnstr( y - 1, 0, "[L] to go back", x, curses.color_pair(2) )
 
         allCoins = list(COINDATA.keys())
         allCoins.sort()
+        listStart = DRAWLISTID * LISTITEMSPERSCREEN
+        listEnd =   listStart  + LISTITEMSPERSCREEN
+        allCoins = allCoins[listStart:listEnd]
         numCoins = len(allCoins)
 
         for i in range(numCoins):
@@ -161,13 +169,21 @@ def Draw(stdscr, y, x ):
 
             coinSymbolLong += ' ' * ( FIELD_LENGTH - len(coinSymbolLong)) 
 
-            coinSymbolLong += COINDATA[allCoins[i]].Usd()[:9]
+            
+            coinValue = COINDATA[allCoins[i]].Usd()
+            if not coinValue == None:
+                coinSymbolLong += coinValue;
+
+            if len(coinSymbolLong) > FIELD_LENGTH + 9:
+                coinSymbolLong = coinSymbolLong[:FIELD_LENGTH + 8]
+
 
             xx = i % ( y - 3 );
             yy = (i - xx) / ( y - 3 );
 
-            stdscr.addnstr( xx + 2 ,yy * (FIELD_LENGTH + 10), coinSymbolLong, x, curses.color_pair(3) )
+            stdscr.addnstr( xx + 2 ,yy * (FIELD_LENGTH + 10), coinSymbolLong, x, curses.color_pair(3 - (i % 2 )) )
     else:
+        
         stdscr.clear()
 
         stdscr.addnstr( 0,0, ASCIIART1, x, curses.color_pair(4))
@@ -275,6 +291,8 @@ def MenuActivate( stdscr ):
         if SORTING >= 6:
             SORTING = 0;
     elif CURRENTMENU == 4:
+        global THREADMAIN
+        THREADMAIN.cancel()
         sys.exit(0)
 
 def Mainc(stdscr):
@@ -301,6 +319,15 @@ def Mainc(stdscr):
     y, x = stdscr.getmaxyx()
     stdscr.clear()
 
+    global DRAWLISTID
+    DRAWLISTID = 0
+    itemsPerListColumn = y - 3
+    columnsPerScreen = x / (FIELD_LENGTH + 10 )
+    global LISTITEMSPERSCREEN
+    LISTITEMSPERSCREEN = itemsPerListColumn * columnsPerScreen
+    global DRAWLISTMAX
+    DRAWLISTMAX = ( len(COINDATA) / LISTITEMSPERSCREEN ) + 1
+
     while inputKey not in {KEY_ESCAPE, KEY_Q, KEY_q}:
         while True:
             try:
@@ -310,6 +337,10 @@ def Mainc(stdscr):
 
             inputKey = stdscr.getch()
             if inputKey != curses.KEY_RESIZE:
+                itemsPerListColumn = y - 3
+                columnsPerScreen = x / (FIELD_LENGTH + 10 )
+                LISTITEMSPERSCREEN = itemsPerListColumn * columnsPerScreen
+                DRAWLISTMAX = ( len(COINDATA) / LISTITEMSPERSCREEN ) + 1
                 break
             stdscr.erase()
             y, x = stdscr.getmaxyx()
@@ -330,17 +361,30 @@ def Mainc(stdscr):
                 SORTING = 0;
 
         if inputKey in {KEY_RIGHT}:
-            CURRENTMENU += 1
-            if CURRENTMENU >= len(BUTTONS):
-                CURRENTMENU = 0
+            if not DRAWLIST:
+                CURRENTMENU += 1
+                if CURRENTMENU >= len(BUTTONS):
+                    CURRENTMENU = 0
+            else:
+                DRAWLISTID += 1
+                if DRAWLISTID >= DRAWLISTMAX:
+                    DRAWLISTID = 0
 
         if inputKey in {KEY_LEFT}:
-            CURRENTMENU -= 1
-            if CURRENTMENU < 0:
-                CURRENTMENU = len(BUTTONS) - 1
+            if not DRAWLIST:
+                CURRENTMENU -= 1
+                if CURRENTMENU < 0:
+                    CURRENTMENU = len(BUTTONS) - 1
+            else:
+                DRAWLISTID -= 1
+                if DRAWLISTID < 0:
+                    DRAWLISTID = DRAWLISTMAX - 1
 
         if inputKey in {KEY_ENTER}:
             MenuActivate(stdscr)
+    
+    global THREADMAIN
+    THREADMAIN.cancel()
 
 def Main():
     try:
