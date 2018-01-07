@@ -157,7 +157,7 @@ def Draw(stdscr, y, x ):
         allCoins.sort()
         listStart = DRAWLISTID * LISTITEMSPERSCREEN
         listEnd =   listStart  + LISTITEMSPERSCREEN
-        allCoins = allCoins[listStart:listEnd]
+        allCoins = allCoins[int(listStart):int(listEnd)]
         numCoins = len(allCoins)
 
         for i in range(numCoins):
@@ -181,7 +181,7 @@ def Draw(stdscr, y, x ):
             xx = i % ( y - 3 );
             yy = (i - xx) / ( y - 3 );
 
-            stdscr.addnstr( xx + 2 ,yy * (FIELD_LENGTH + 10), coinSymbolLong, x, curses.color_pair(3 - (i % 2 )) )
+            stdscr.addnstr( xx + 2 ,int(yy * (FIELD_LENGTH + 10)), coinSymbolLong, x, curses.color_pair(3 - (i % 2 )) )
     else:
         
         stdscr.clear()
@@ -326,7 +326,7 @@ def Mainc(stdscr):
     global LISTITEMSPERSCREEN
     LISTITEMSPERSCREEN = itemsPerListColumn * columnsPerScreen
     global DRAWLISTMAX
-    DRAWLISTMAX = ( len(COINDATA) / LISTITEMSPERSCREEN ) + 1
+    DRAWLISTMAX = int(( len(COINDATA) / LISTITEMSPERSCREEN ) + 1 )
 
     while inputKey not in {KEY_ESCAPE, KEY_Q, KEY_q}:
         while True:
@@ -340,7 +340,7 @@ def Mainc(stdscr):
                 itemsPerListColumn = y - 3
                 columnsPerScreen = x / (FIELD_LENGTH + 10 )
                 LISTITEMSPERSCREEN = itemsPerListColumn * columnsPerScreen
-                DRAWLISTMAX = ( len(COINDATA) / LISTITEMSPERSCREEN ) + 1
+                DRAWLISTMAX = int(( len(COINDATA) / LISTITEMSPERSCREEN ) + 1 ) 
                 break
             stdscr.erase()
             y, x = stdscr.getmaxyx()
