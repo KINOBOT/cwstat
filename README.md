@@ -36,3 +36,6 @@ Alternatively add this to your ~/.bash_profile to alias the tool and set it up
 export CWSTAT_PATH="/path/to/cwstat/root/dir"
 alias cws="${CWSTAT_PATH}/cwstat"
 ```
+
+# Future plans
+Add Transaction to track loss/gain. Tell what price you payed for your investment and see the results.
