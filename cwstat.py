@@ -40,6 +40,7 @@ ASCIIART2 = '  / //_/  _/ |/ / __ \/ _ )/ __ /_  __/ ____  _____    _____/ /____
 ASCIIART3 = ' / .< _/ //    / /_/ / _  / /_/ // /   /___/ / __| |/|/ (_-/ __/ _ `/ __/ /___/'
 ASCIIART4 = '/_/|_/___/_/|_/\____/____/\____//_/          \__/|__/__/___\__/\___/\__/       '
  
+PRUNELIST = { 'batcoin' }
 
 class Coin:
     def __init__(self):
@@ -47,6 +48,9 @@ class Coin:
 
     def __init__(self, jsondata ):
         self.data = jsondata
+
+    def Id( self ):
+        return self.data['id']
 
     def Symbol(self):
         return self.data['symbol']
@@ -58,11 +62,18 @@ class Coin:
         return self.data['price_usd']
     
     def Change1h(self):
-        return self.data['percent_change_1h']  
+        c = self.data['percent_change_1h']
+        if not c == None:
+            return c
+        else:
+            return '0.0' 
 
     def Change24h(self):
-        return self.data['percent_change_24h']   
-    
+        c = self.data['percent_change_24h']
+        if not c == None:
+            return c
+        else:
+            return '0.0' 
 
 def UpdateCoindata():
     url = 'https://api.coinmarketcap.com/v1/ticker/?limit=0'
@@ -72,15 +83,17 @@ def UpdateCoindata():
     except requests.exceptions.RequestException:
         sys.exit('Could not get live ticker')
 
+    counter = {}
     try:
         jdata = r.json()
         COINDATA.clear()
         for entry in jdata:
             c = Coin( entry )
-            COINDATA[c.Symbol()] = c
+            if not c.Id() in PRUNELIST:
+                COINDATA[c.Symbol()] = c
     except:
         sys.exit('Could not parse data')
-    
+
     # invoke repeating
     global THREADMAIN
     THREADMAIN = threading.Timer( 10.0, UpdateCoindata )
@@ -116,16 +129,16 @@ def DrawMenu(stdscr, y, x):
     sel = BUTTONS[CURRENTMENU]
 
     selStart = 0
-    
+
     for i in range( CURRENTMENU ):
         selStart += len(BUTTONS[i])
-    
+
     selEnd = selStart + len(sel)
 
     beforeSel = ''
     if CURRENTMENU > 0:
         beforeSel = allButtons[0:selStart]
-    
+
     afterSel = allButtons[selEnd:-1]
 
     stdscr.addnstr( y-2,0, beforeSel, x, curses.color_pair(2) )
@@ -169,7 +182,7 @@ def Draw(stdscr, y, x ):
 
             coinSymbolLong += ' ' * ( FIELD_LENGTH - len(coinSymbolLong)) 
 
-            
+
             coinValue = COINDATA[allCoins[i]].Usd()
             if not coinValue == None:
                 coinSymbolLong += coinValue;
@@ -178,12 +191,11 @@ def Draw(stdscr, y, x ):
                 coinSymbolLong = coinSymbolLong[:FIELD_LENGTH + 8]
 
 
-            xx = i % ( y - 3 );
-            yy = (i - xx) / ( y - 3 );
+            xx = i % ( y - 3 )
+            yy = (i - xx) / ( y - 3 )
 
             stdscr.addnstr( xx + 2 ,int(yy * (FIELD_LENGTH + 10)), coinSymbolLong, x, curses.color_pair(3 - (i % 2 )) )
     else:
-        
         stdscr.clear()
 
         stdscr.addnstr( 0,0, ASCIIART1, x, curses.color_pair(4))
@@ -197,8 +209,8 @@ def Draw(stdscr, y, x ):
                                                                             spacer_for_5,
                                                                             spacer_for_9,
                                                                             spacer_for_10) 
-        
-        
+
+
         stdscr.addnstr( 5,0, header, x, curses.color_pair(4) )
         stdscr.addnstr( 5,SORTING * FIELD_LENGTH + FIELD_LENGTH - 2, 'v', x, curses.color_pair(4) )
 
@@ -211,7 +223,7 @@ def Draw(stdscr, y, x ):
             if not allCoins[i] in COINDATA:
                 #DoRemoveCoin(allCoins[i]) # do this if you dont want the somehow  removed coin to stay in the wallet
                 continue
-            
+
             coinSymbol = allCoins[i]
             coinSymbolLong = coinSymbol + (' ' * (5 - len(coinSymbol))) + ' - ' + COINDATA[allCoins[i]].Name()
             if len(coinSymbolLong) > FIELD_LENGTH - 1:
@@ -350,7 +362,7 @@ def Mainc(stdscr):
 
         if inputKey in {KEY_r, KEY_R}:
             RemoveCoin(stdscr)
-       
+
         if inputKey in {KEY_l, KEY_L}:
             DRAWLIST = not DRAWLIST
 
@@ -382,7 +394,7 @@ def Mainc(stdscr):
 
         if inputKey in {KEY_ENTER}:
             MenuActivate(stdscr)
-    
+
     global THREADMAIN
     THREADMAIN.cancel()
 
