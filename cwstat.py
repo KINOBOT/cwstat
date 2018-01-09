@@ -157,6 +157,7 @@ def Draw(stdscr, y, x ):
     global DRAWLIST
     global SORTING
     global DRAWLISTID
+    global WALLET
 
     if DRAWLIST:
         stdscr.clear()
@@ -194,7 +195,11 @@ def Draw(stdscr, y, x ):
             xx = i % ( y - 3 )
             yy = (i - xx) / ( y - 3 )
 
-            stdscr.addnstr( xx + 2 ,int(yy * (FIELD_LENGTH + 10)), coinSymbolLong, x, curses.color_pair(3 - (xx % 2 )) )
+            colorId = 3 - ( xx % 2 )
+	    if allCoins[i] in WALLET:
+	        colorId = 5
+
+            stdscr.addnstr( xx + 2 ,int(yy * (FIELD_LENGTH + 10)), coinSymbolLong, x, curses.color_pair(colorId) )
     else:
         stdscr.clear()
 
