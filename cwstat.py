@@ -194,7 +194,7 @@ def Draw(stdscr, y, x ):
             xx = i % ( y - 3 )
             yy = (i - xx) / ( y - 3 )
 
-            stdscr.addnstr( xx + 2 ,int(yy * (FIELD_LENGTH + 10)), coinSymbolLong, x, curses.color_pair(3 - (i % 2 )) )
+            stdscr.addnstr( xx + 2 ,int(yy * (FIELD_LENGTH + 10)), coinSymbolLong, x, curses.color_pair(3 - (xx % 2 )) )
     else:
         stdscr.clear()
 
