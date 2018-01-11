@@ -3,6 +3,7 @@ import json
 import curses
 import os, sys
 import threading
+import datetime
 
 
 #GLOBAL VARIABLES
@@ -76,6 +77,11 @@ class Coin:
             return '0.0' 
 
 def UpdateCoindata():
+    # invoke repeating
+    global THREADMAIN
+    THREADMAIN = threading.Timer( 10.0, UpdateCoindata )
+    THREADMAIN.start()
+
     url = 'https://api.coinmarketcap.com/v1/ticker/?limit=0'
 
     try:
@@ -94,10 +100,10 @@ def UpdateCoindata():
     except:
         sys.exit('Could not parse data')
 
-    # invoke repeating
-    global THREADMAIN
-    THREADMAIN = threading.Timer( 10.0, UpdateCoindata )
-    THREADMAIN.cancel()
+
+    global LASTUPDATED
+    LASTUPDATED = datetime.datetime.now()
+    
 
 def WriteWallet():
     with open(WALLETFILE, 'w') as f:
@@ -158,6 +164,7 @@ def Draw(stdscr, y, x ):
     global SORTING
     global DRAWLISTID
     global WALLET
+    global LASTUPDATED
 
     if DRAWLIST:
         stdscr.clear()
@@ -267,6 +274,9 @@ def Draw(stdscr, y, x ):
         stdscr.addnstr( y-4,0, balanceTag, x, curses.color_pair(2) )
         stdscr.addnstr( y-4,len(balanceTag), balance, x, curses.color_pair(3) )
 
+        updateTimeStr = '%s-%s-%s | %s:%s:%s' % ( LASTUPDATED.year, LASTUPDATED.month, LASTUPDATED.day, LASTUPDATED.hour, LASTUPDATED.minute, LASTUPDATED.second ) 
+        stdscr.addnstr( y-4,len(balanceTag) + len(balance) + 2, updateTimeStr , x, curses.color_pair(2) )
+
 
         # BUTTON management
         DrawMenu(stdscr, y, x)
@@ -350,6 +360,7 @@ def Mainc(stdscr):
             try:
                 Draw(stdscr, y, x)
             except curses.error:
+                THREADMAIN.cancel()
                 pass
 
             inputKey = stdscr.getch()
@@ -400,8 +411,8 @@ def Mainc(stdscr):
         if inputKey in {KEY_ENTER}:
             MenuActivate(stdscr)
 
-    global THREADMAIN
     THREADMAIN.cancel()
+
 
 def Main():
     try:
@@ -420,7 +431,14 @@ def Main():
     # intiial update
     UpdateCoindata()
 
-    curses.wrapper(Mainc)
+    try:
+        curses.wrapper(Mainc)
+    except KeyboardInterrupt:
+        print 'Interrupted'
+        try:
+            sys.exit(0)
+        except SystemExit:
+            os._exit(0)
 
 
 if __name__ == '__main__':
