@@ -274,7 +274,7 @@ def Draw(stdscr, y, x ):
         stdscr.addnstr( y-4,0, balanceTag, x, curses.color_pair(2) )
         stdscr.addnstr( y-4,len(balanceTag), balance, x, curses.color_pair(3) )
 
-        updateTimeStr = '%s-%s-%s | %s:%s:%s' % ( LASTUPDATED.year, LASTUPDATED.month, LASTUPDATED.day, LASTUPDATED.hour, LASTUPDATED.minute, LASTUPDATED.second ) 
+        updateTimeStr = LASTUPDATED.strftime( '%c')
         stdscr.addnstr( y-4,len(balanceTag) + len(balance) + 2, updateTimeStr , x, curses.color_pair(2) )
 
 
