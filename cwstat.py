@@ -15,12 +15,14 @@ KEY_Q = 81
 KEY_R = 82
 KEY_S = 83
 KEY_C = 67
+KEY_W = 87
 KEY_a = 97
 KEY_l = 108
 KEY_q = 113
 KEY_r = 114
 KEY_s = 115
 KEY_c = 99
+KEY_w = 119
 KEY_LEFT = 260
 KEY_RIGHT = 261
 KEY_ENTER = 10
@@ -28,12 +30,12 @@ KEY_ENTER = 10
 COINDATA = {}
 
 FIELD_LENGTH = 20
-BUTTONS = [ '[A] Add/Modify Coin ', '[R] Remove Coin ', '[L] List all Coins ', '[C] Cycle Sorting ', '[Q] Quit ']
+BUTTONS = [ '[A] Add/Modify Coin ', '[R] Remove Coin ', '[L] List all Coins ', '[C] Cycle Sorting ', '[W] Cycle Wallets ', '[Q] Quit ']
 
 USAGE = '[<>] to navigate [ENTER] to select'
 
 BASEDIR = os.path.join(os.path.expanduser('~'), '.cwstat')
-WALLETFILE = os.path.join(BASEDIR, 'wallet.json')
+#WALLETFILE = os.path.join(BASEDIR, 'wallet.json')
 
 
 ASCIIART1 = '   __ _______  ______  ___  ____ ______                      __       __       '
@@ -105,13 +107,27 @@ def UpdateCoindata():
     LASTUPDATED = datetime.datetime.now()
     
 
-def WriteWallet():
-    with open(WALLETFILE, 'w') as f:
-        json.dump(WALLET, f)
+def WriteWallets():
+    global WALLETS
+    for i in range(len(WALLETS)):
+        outpath = os.path.join(BASEDIR, 'wallet_%s.json' % i ) 
+        print outpath
+        WriteWallet( WALLETS[i], outpath )
 
-def ReadWallet():
+def WriteWallet( wal, outfile ):
+    with open(outfile, 'w') as f:
+        json.dump(wal, f)
+
+def ReadWallets():
+    global WALLETS
+    WALLETS = []
+    for f in sorted(os.listdir( BASEDIR )):
+        if f.endswith( '.json'):
+            WALLETS.append( ReadWallet(os.path.join( BASEDIR, f )) )
+
+def ReadWallet(infile):
     try:
-        with open(WALLETFILE, 'r') as f:
+        with open(infile, 'r') as f:
             return json.load(f)
     except:
         return {}
@@ -163,8 +179,16 @@ def Draw(stdscr, y, x ):
     global DRAWLIST
     global SORTING
     global DRAWLISTID
-    global WALLET
+    global WALLETS
+    global CURRENTWALLET
     global LASTUPDATED
+
+
+    if len(WALLETS) > 0:
+        wallet = WALLETS[CURRENTWALLET]
+    else:
+        wallet = {}
+        WALLETS.append(wallet)
 
     if DRAWLIST:
         stdscr.clear()
@@ -203,7 +227,7 @@ def Draw(stdscr, y, x ):
             yy = (i - xx) / ( y - 3 )
 
             colorId = 3 - ( xx % 2 )
-	    if allCoins[i] in WALLET:
+	    if allCoins[i] in wallet:
 	        colorId = 5
 
             stdscr.addnstr( xx + 2 ,int(yy * (FIELD_LENGTH + 10)), coinSymbolLong, x, curses.color_pair(colorId) )
@@ -222,11 +246,11 @@ def Draw(stdscr, y, x ):
                                                                             spacer_for_9,
                                                                             spacer_for_10) 
 
-
+        stdscr.addnstr( 4,0, 'Wallet %s / %s' % (CURRENTWALLET + 1, len(WALLETS)), x, curses.color_pair(4) )
         stdscr.addnstr( 5,0, header, x, curses.color_pair(4) )
         stdscr.addnstr( 5,SORTING * FIELD_LENGTH + FIELD_LENGTH - 2, 'v', x, curses.color_pair(4) )
 
-        allCoins = list(WALLET.keys())
+        allCoins = list(wallet.keys())
         numCoins = len(allCoins)
 
         listEntrys = []
@@ -243,8 +267,8 @@ def Draw(stdscr, y, x ):
                 coinSymbolLong = coinSymbolLong[:-2] + '.'
 
             coinUsdValue = COINDATA[allCoins[i]].Usd()
-            holding  = float(WALLET[coinSymbol])
-            holdingStr = WALLET[coinSymbol]
+            holding  = float(wallet[coinSymbol])
+            holdingStr = wallet[coinSymbol]
             worth = holding * float(coinUsdValue)
             worthStr = str(worth)
             change1h = COINDATA[allCoins[i]].Change1h()
@@ -292,17 +316,32 @@ def AddCoin(stdscr):
         amount = amount.strip()
 
         if symbol in COINDATA:
-            WALLET[symbol.strip()] = amount.strip()
-            WriteWallet()
+            global WALLETS
+            global CURRENTWALLET
+            if len(WALLETS) > 0:
+                w = WALLETS[CURRENTWALLET]
+            else:
+                w = {}
+                WALLETS.append(w)
+            w[symbol.strip()] = amount.strip()
+            WriteWallets()
 
 def RemoveCoin(stdscr):
     inputData = ReadStringFromCmd(stdscr, 'What Symbol do you want to remove?').strip().upper()
     DoRemoveCoin(inputData)
 
 def DoRemoveCoin(c):
-    if c in WALLET:
-        WALLET.pop(c)
-        WriteWallet()
+    global WALLETS
+    global CURRENTWALLET
+    if len(WALLETS) > 0:
+        w = WALLETS[CURRENTWALLET]
+    else:
+        w = {}
+        WALLETS.append(w)
+
+    if c in w:
+        w.pop(c)
+        WriteWallets()
 
 def MenuActivate( stdscr ):
     if CURRENTMENU == 0:
@@ -318,6 +357,12 @@ def MenuActivate( stdscr ):
         if SORTING >= 6:
             SORTING = 0;
     elif CURRENTMENU == 4:
+        global CURRENTWALLET
+        global WALLETS
+        CURRENTWALLET += 1
+        if ( CURRENTWALLET >= len(WALLETS)):
+            CURRENTWALLET = 0
+    elif CURRENTMENU == 5:
         global THREADMAIN
         THREADMAIN.cancel()
         sys.exit(0)
@@ -355,6 +400,10 @@ def Mainc(stdscr):
     global DRAWLISTMAX
     DRAWLISTMAX = int(( len(COINDATA) / LISTITEMSPERSCREEN ) + 1 )
 
+    global SORTING
+    global CURRENTWALLET
+    global WALLETS
+
     while inputKey not in {KEY_ESCAPE, KEY_Q, KEY_q}:
         while True:
             try:
@@ -383,10 +432,19 @@ def Mainc(stdscr):
             DRAWLIST = not DRAWLIST
 
         if inputKey in {KEY_c, KEY_C}:
-            global SORTING
+            
             SORTING += 1
             if SORTING >= 6:
                 SORTING = 0;
+
+        if inputKey in {KEY_w}:
+            CURRENTWALLET += 1
+            if ( CURRENTWALLET >= len(WALLETS)):
+                CURRENTWALLET = 0
+
+        if inputKey in {KEY_W}:
+            WALLETS.append({})
+            CURRENTWALLET = len(WALLETS) - 1
 
         if inputKey in {KEY_RIGHT}:
             if not DRAWLIST:
@@ -420,10 +478,16 @@ def Main():
     except:
         pass
 
-    global WALLET
-    WALLET = ReadWallet()
+    # backwards compatible
+    if os.path.isfile( os.path.join( BASEDIR, 'wallet.json')):
+        os.rename( os.path.join( BASEDIR, 'wallet.json'), os.path.join( BASEDIR, 'wallet_0.json'))
+        
+    ReadWallets()
     global CURRENTMENU
     CURRENTMENU = 0
+
+    global CURRENTWALLET
+    CURRENTWALLET = 0
 
     global SORTING
     SORTING = 3
