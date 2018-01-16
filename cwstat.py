@@ -309,8 +309,11 @@ def Draw(stdscr, y, x ):
 
 def AddCoin(stdscr):
     inputData = ReadStringFromCmd(stdscr, 'Enter Symbol , and Amount ( BTC,2.45 )').strip().upper()
-    if ',' in inputData:
+    if ',' in inputData and len(inputData.split( ',' )) == 2:
         symbol, amount = inputData.split( ',' )
+
+        if symbol == '' or amount == '':
+            return
 
         symbol = symbol.strip()
         amount = amount.strip()
