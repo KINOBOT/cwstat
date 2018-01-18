@@ -329,13 +329,21 @@ def AddCoin(stdscr):
             else:
                 w = {}
                 WALLETS.append(w)
-            if amount[0] == '+':
+
+            wVal = 0.0
+
+            try:
                 wVal = float(w[symbol.strip()])
+            except:
+                pass
+            
+            if amount[0] == '+':
                 wVal += float(amount[1:])
                 w[symbol.strip()] = str(wVal)
             elif amount[0] == '-':
-                wVal = float(w[symbol.strip()])
                 wVal -= float(amount[1:])
+                if wVal < 0.0:
+                    wVal = 0.0
                 w[symbol.strip()] = str(wVal)
             else:
                 w[symbol.strip()] = amount.strip()
