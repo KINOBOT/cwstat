@@ -318,6 +318,9 @@ def AddCoin(stdscr):
         symbol = symbol.strip()
         amount = amount.strip()
 
+        if len(amount) < 1:
+            return
+
         if symbol in COINDATA:
             global WALLETS
             global CURRENTWALLET
@@ -326,7 +329,16 @@ def AddCoin(stdscr):
             else:
                 w = {}
                 WALLETS.append(w)
-            w[symbol.strip()] = amount.strip()
+            if amount[0] == '+':
+                wVal = float(w[symbol.strip()])
+                wVal += float(amount[1:])
+                w[symbol.strip()] = str(wVal)
+            elif amount[0] == '-':
+                wVal = float(w[symbol.strip()])
+                wVal -= float(amount[1:])
+                w[symbol.strip()] = str(wVal)
+            else:
+                w[symbol.strip()] = amount.strip()
             WriteWallets()
 
 def RemoveCoin(stdscr):
