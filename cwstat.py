@@ -4,7 +4,7 @@ import curses
 import os, sys
 import threading
 import datetime
-
+import pickle
 
 #GLOBAL VARIABLES
 KEY_ESCAPE = 27
@@ -30,7 +30,7 @@ KEY_ENTER = 10
 COINDATA = {}
 
 FIELD_LENGTH = 20
-BUTTONS = [ '[A] Add/Modify Coin ', '[R] Remove Coin ', '[L] List all Coins ', '[C] Cycle Sorting ', '[W] Cycle Wallets ', '[Q] Quit ']
+BUTTONS = [ '[A] Add/Modify Coin ', '[R] Remove Coin ', '[l] List all Coins ', '[L] History ', '[C] Cycle Sorting ', '[W] Cycle Wallets ', '[Q] Quit ']
 
 USAGE = '[<>] to navigate [ENTER] to select'
 
@@ -105,7 +105,12 @@ def UpdateCoindata():
 
     global LASTUPDATED
     LASTUPDATED = datetime.datetime.now()
-    
+
+    global LASTWORTHTIME
+    global WORTHDB
+    currentWorthTime = int(LASTUPDATED.strftime('%Y%m%d%H%-M'))
+    if currentWorthTime > LASTWORTHTIME:
+        LASTWORTHTIME = currentWorthTime    
 
 def WriteWallets():
     global WALLETS
@@ -177,11 +182,14 @@ def Draw(stdscr, y, x ):
     spacer_for_10 = ' ' * (FIELD_LENGTH - 10)
 
     global DRAWLIST
+    global DRAWHISTORY
     global SORTING
     global DRAWLISTID
     global WALLETS
     global CURRENTWALLET
     global LASTUPDATED
+    global LASTWORTHTIME
+    global WORTHDB
 
 
     if len(WALLETS) > 0:
@@ -190,7 +198,76 @@ def Draw(stdscr, y, x ):
         wallet = {}
         WALLETS.append(wallet)
 
-    if DRAWLIST:
+    if DRAWHISTORY:
+        stdscr.clear()
+        
+        minTime = min(WORTHDB.keys())
+        maxTime = max(WORTHDB.keys())
+        minTimeStr = str( minTime )
+        maxTimeStr = str( maxTime )
+        minTimeStr = '%s/%s/%s-%s:%s' % ( minTimeStr[4:6], minTimeStr[6:8], minTimeStr[2:4], minTimeStr[8:10], minTimeStr[10:12])
+        maxTimeStr = '%s/%s/%s-%s:%s' % ( maxTimeStr[4:6], maxTimeStr[6:8], maxTimeStr[2:4], maxTimeStr[8:10], maxTimeStr[10:12])
+
+        deltaTime = maxTime - minTime
+
+        minWorth = min(WORTHDB.values())
+        maxWorth = max(WORTHDB.values())
+        deltaWorth = maxWorth - minWorth
+
+        stdscr.addnstr( 0, 0, 'History of net Worth' , x, curses.color_pair(4) )
+
+        graphDescBottom = str(minWorth) + ' / ' + minTimeStr
+        graphDescBottom += ' ' * (x - (len(graphDescBottom) + len(str(maxTimeStr))) - 1)
+        graphDescBottom += maxTimeStr
+        stdscr.addnstr( y - 1, 0, graphDescBottom, x-1, curses.color_pair(3) )
+
+        stdscr.addnstr( 2, 0, str(maxWorth), len(str(maxWorth)), curses.color_pair(3) )
+        stdscr.addnstr( y - 2, 0, 'X', 1, curses.color_pair(2) )
+
+        for i in range( 3, y-2):
+            stdscr.addnstr( i, 0, '|', 1, curses.color_pair(2) )
+        for i in range( 1, x):
+            stdscr.addnstr( y-2, i, '-', 1, curses.color_pair(2) )
+
+
+        allKeys = sorted(WORTHDB.keys())
+        allKeysLen = len(allKeys)
+        deltaKeys = allKeysLen / ( x - 2 )
+        graphHeight = y - 5
+
+        lastValue = 0.0
+        for i in range( 1, x - 2 ):
+            currentValue = WORTHDB[allKeys[i * deltaKeys]]
+            currentValueNormalized = (currentValue - minWorth ) / deltaWorth
+            char = '='
+            '''
+            if currentValueNormalized > lastValue + 0.0:
+                char = '/'
+            elif currentValueNormalized < lastValue - 0.0:
+                char = '\\'
+            '''
+            stdscr.addnstr( (y - 2) - int(currentValueNormalized * graphHeight + 0.5)  , i, char, 1, curses.color_pair(4) )
+            lastValue = currentValueNormalized
+
+
+
+            ''' 
+            allWorthDbKeys = sorted(WORTHDB)
+            numKeysInWorthDB = len(allWorthDbKeys)
+            allWorthDbKeys.reverse()
+
+            for i in range(numKeysInWorthDB):
+                xx = i % ( y - 3 )
+                yy = (i - xx) / ( y - 3 )
+
+                colorId = 3 - ( xx % 2 )
+
+                historyEntry = '%s | %s' % (allWorthDbKeys[i], WORTHDB[allWorthDbKeys[i]])
+                stdscr.addnstr( xx + 2, int(yy * (FIELD_LENGTH + 10)), historyEntry, x, curses.color_pair(colorId) )
+
+            '''
+
+    elif DRAWLIST:
         stdscr.clear()
         global DRAWLISTID
         global LISTITEMSPERSCREEN
@@ -301,6 +378,8 @@ def Draw(stdscr, y, x ):
         updateTimeStr = LASTUPDATED.strftime( '%c')
         stdscr.addnstr( y-4,len(balanceTag) + len(balance) + 2, updateTimeStr , x, curses.color_pair(2) )
 
+        WORTHDB[LASTWORTHTIME] = total
+        pickle.dump( WORTHDB, open( os.path.join( BASEDIR, 'worth.db'), 'wb'))
 
         # BUTTON management
         DrawMenu(stdscr, y, x)
@@ -367,25 +446,30 @@ def DoRemoveCoin(c):
         WriteWallets()
 
 def MenuActivate( stdscr ):
+    global DRAWHISTORY
+    global DRAWLIST
     if CURRENTMENU == 0:
         AddCoin(stdscr)
     elif CURRENTMENU == 1:
         RemoveCoin(stdscr)
     elif CURRENTMENU == 2:
-        global DRAWLIST
+        DRAWHISTORY = False
         DRAWLIST = not DRAWLIST
     elif CURRENTMENU == 3:
+        DRAWLIST = False
+        DRAWHISTORY = not DRAWHISTORY
+    elif CURRENTMENU == 4:
         global SORTING
         SORTING += 1
         if SORTING >= 6:
             SORTING = 0;
-    elif CURRENTMENU == 4:
+    elif CURRENTMENU == 5:
         global CURRENTWALLET
         global WALLETS
         CURRENTWALLET += 1
         if ( CURRENTWALLET >= len(WALLETS)):
             CURRENTWALLET = 0
-    elif CURRENTMENU == 5:
+    elif CURRENTMENU == 6:
         global THREADMAIN
         THREADMAIN.cancel()
         sys.exit(0)
@@ -408,6 +492,9 @@ def Mainc(stdscr):
 
     global DRAWLIST
     DRAWLIST = False
+
+    global DRAWHISTORY
+    DRAWHISTORY = False
 
     curses.halfdelay(10)
 
@@ -451,8 +538,13 @@ def Mainc(stdscr):
         if inputKey in {KEY_r, KEY_R}:
             RemoveCoin(stdscr)
 
-        if inputKey in {KEY_l, KEY_L}:
+        if inputKey in {KEY_l }:
+            DRAWHISTORY = False
             DRAWLIST = not DRAWLIST
+        
+        if inputKey in {KEY_L }:
+            DRAWLIST = False
+            DRAWHISTORY = not DRAWHISTORY
 
         if inputKey in {KEY_c, KEY_C}:
             
@@ -514,6 +606,17 @@ def Main():
 
     global SORTING
     SORTING = 3
+
+    global WORTHDB
+    global LASTWORTHTIME
+
+    if os.path.isfile( os.path.join( BASEDIR, 'worth.db')):
+        WORTHDB = pickle.load( open( os.path.join( BASEDIR, 'worth.db'), 'rb') )
+        LASTWORTHTIME = sorted(WORTHDB)[-1]
+    else:
+        WORTHDB = {}
+        LASTWORTHTIME = int(datetime.datetime.now().strftime('%Y%m%d%H%-M'))
+
 
     # intiial update
     UpdateCoindata()
